@@ -11,6 +11,7 @@ interface UserInfo {
   sub: string;
   name?: string | null;
   email?: string;
+  roles?: string[];
   [key: string]: unknown;
 }
 
@@ -34,16 +35,21 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
     }
     params.append("token", token);
 
-    const tokenInfoResponse = await fetch(`${baseUrl}/oidc/token/introspection`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params,
-    });
+    const tokenInfoResponse = await fetch(
+      `${baseUrl}/oidc/token/introspection`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params,
+      }
+    );
 
     if (!tokenInfoResponse.ok) {
-      throw new Error(`Failed to introspect token: ${tokenInfoResponse.status}`);
+      throw new Error(
+        `Failed to introspect token: ${tokenInfoResponse.status}`
+      );
     }
 
     const tokenInfo = (await tokenInfoResponse.json()) as TokenInfo;
@@ -52,7 +58,7 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
       throw new Error("Token is not active");
     }
 
-    // Get user info
+    // Get user info with roles
     const userInfoResponse = await fetch(`${baseUrl}/oidc/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -67,10 +73,10 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
       throw new Error("No user ID in response");
     }
 
-    const scopes = typeof tokenInfo.scope === "string" ? tokenInfo.scope.split(" ") : [];
-    const roles = Array.isArray(tokenInfo.role)
-      ? tokenInfo.role.map((r) => r.name)
-      : [];
+    // Get roles from user info
+    const roles = (userInfo.roles as string[]) || [];
+    const scopes =
+      typeof tokenInfo.scope === "string" ? tokenInfo.scope.split(" ") : [];
 
     return {
       userId: userInfo.sub,
@@ -94,13 +100,15 @@ export function checkRoles(auth: AuthContext, requiredRoles: string[]): void {
 }
 
 export function checkScopes(auth: AuthContext, requiredScopes: string[]): void {
-  const resourcePrefix = "http://127.0.0.1:4000/";
+  const resourcePrefix = "http://localhost:4000/";
   const fullScopes = requiredScopes.map((s) =>
     s.startsWith(resourcePrefix) ? s : resourcePrefix + s
   );
 
   const missing = fullScopes.filter((s) => !auth.scopes.includes(s));
   if (missing.length > 0) {
-    throw APIError.permissionDenied(`Missing required scopes: ${missing.join(", ")}`);
+    throw APIError.permissionDenied(
+      `Missing required scopes: ${missing.join(", ")}`
+    );
   }
 }

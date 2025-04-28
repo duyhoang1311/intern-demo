@@ -2,17 +2,17 @@ import { api, APIError } from "encore.dev/api";
 import { db } from "../db";
 import bcrypt from "bcrypt";
 import { randomUUID } from "node:crypto";
-import { createLogtoClient, logtoConfig } from "./logto-config";
+import { createLogtoClient, logtoConfig, sessionStorage } from "./logto-config";
 import { isAdmin, verifyLogtoAuth } from "./auth";
 import { URLSearchParams } from "url";
-import crypto from 'crypto';
+import crypto from "crypto";
 
-const codeVerifier = crypto.randomBytes(32).toString('base64url');
+const codeVerifier = crypto.randomBytes(32).toString("base64url");
 
 const codeChallenge = crypto
-  .createHash('sha256')
+  .createHash("sha256")
   .update(codeVerifier)
-  .digest('base64url');
+  .digest("base64url");
 
 const SECRET_KEY = process.env.SECRET_KEY || "your-secret-key";
 
@@ -49,7 +49,6 @@ export const registerUser = api(
   }
 );
 
-
 // export const loginUser = api(
 //   { method: "POST", path: "/user/login", expose: true },
 //   async ({
@@ -81,165 +80,198 @@ export const registerUser = api(
 
 const queryParams = new URLSearchParams({
   client_id: logtoConfig.appId,
-  response_type: 'code',
-  scope: 'openid profile email',
-  redirect_uri: `${process.env.API_URL || 'http://localhost:4000'}/auth/callback`,
+  response_type: "code",
+  scope: "openid profile email",
+  redirect_uri: `${
+    process.env.API_URL || "http://localhost:4000"
+  }/auth/callback`,
 });
 
-const redirectUrl = `${logtoConfig.endpoint}/oidc/auth?${queryParams.toString()}`;
-
+const redirectUrl = `${
+  logtoConfig.endpoint
+}/oidc/auth?${queryParams.toString()}`;
 
 // Khởi tạo client Logto
-// export const login = api(
-//   { method: "GET", path: "/auth/login", expose: true },
-//   async (): Promise<{ redirect_url: string }> => {
-//       try {
-//           const logtoClient = createLogtoClient();
-//           const callbackUrl = `${process.env.API_URL || 'http://localhost:4000'}/auth/callback`;
-          
-//           console.log('Starting login flow with config:', {
-//               endpoint: logtoConfig.endpoint,
-//               appId: logtoConfig.appId,
-//               configuredScopes: logtoConfig.scopes,
-//               resources: logtoConfig.resources
-//           });
-          
-//           // Check if we already have a valid session
-//           try {
-//               const context = await logtoClient.getContext();
-//               console.log('Existing context:', context);
-//               if (context.isAuthenticated) {
-//                   // If we have a valid session, return the current access token
-//                   const accessToken = await logtoClient.getAccessToken();
-//                   console.log('Existing access token:', accessToken);
-//                   return {
-//                       redirect_url: `${process.env.API_URL || 'http://localhost:4000'}/auth/callback?token=${accessToken}`
-//                   };
-//               }
-//           } catch (error) {
-//               // If getContext fails, we need to start a new login flow
-//               console.log('No valid session found, starting new login flow');
-//           }
-          
-//           // Initiate the sign-in flow and return the callback URL
-//           await logtoClient.signIn(callbackUrl);
-//           return {
-//               redirect_url: callbackUrl
-//           };
-//       } catch (error) {
-//           console.error('Login failed:', error);
-//           throw APIError.internal(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-//       }
-//   }
-// );
-
 export const login = api(
   { method: "GET", path: "/auth/login", expose: true },
   async (): Promise<{ redirect_url: string }> => {
-    const params = new URLSearchParams({
-      client_id: logtoConfig.appId,
-      redirect_uri: `${process.env.API_URL || 'http://localhost:4000'}/auth/callback`,
-      response_type: 'code',
-      scope: 'openid offline_access',
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',  // Phương thức mã hóa SHA256
-    });
+    try {
+      const logtoClient = createLogtoClient();
+      const callbackUrl = `${
+        process.env.API_URL || "http://localhost:4000"
+      }/auth/callback`;
 
-    const authorizationUrl = `${logtoConfig.endpoint}/oidc/auth?${params.toString()}`;
+      // Generate state parameter for security
+      const state = crypto.randomBytes(16).toString("hex");
 
-    return { redirect_url: authorizationUrl };
+      // Generate code verifier and challenge for PKCE
+      const codeVerifier = crypto.randomBytes(32).toString("base64url");
+      const codeChallenge = crypto
+        .createHash("sha256")
+        .update(codeVerifier)
+        .digest("base64url");
+
+      // Store the code verifier in session storage
+      sessionStorage.set(state, { codeVerifier });
+
+      // Build the authorization URL with all required parameters
+      const queryParams = new URLSearchParams({
+        client_id: logtoConfig.appId,
+        response_type: "code",
+        scope: (logtoConfig.scopes || ["openid", "profile", "email"]).join(" "),
+        redirect_uri: callbackUrl,
+        state: state,
+        code_challenge: codeChallenge,
+        code_challenge_method: "S256",
+        prompt: "login", // Force login screen
+      });
+
+      const authUrl = `${
+        logtoConfig.endpoint
+      }/oidc/auth?${queryParams.toString()}`;
+
+      return {
+        redirect_url: authUrl,
+      };
+    } catch (error) {
+      console.error("Login failed:", error);
+      throw APIError.internal(
+        `Login failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
   }
 );
 
 // Callback endpoint
 export const callback = api(
   { method: "GET", path: "/auth/callback", expose: true },
-  async ({ code, state }: { code?: string, state?: string }): Promise<{ access_token: string; user_id: string }> => {
-      try {
-          if (!code) {
-              throw APIError.invalidArgument("Authorization code is required");
-          }
-
-          const logtoClient = createLogtoClient();
-          console.log('Processing callback with code:', code);
-          
-          try {
-              // Handle the callback and exchange code for tokens
-              await logtoClient.handleSignInCallback(`${process.env.API_URL || 'http://localhost:4000'}/auth/callback?code=${code}&state=${state || ''}`);
-              
-              // Get and log token information
-              const accessToken = await logtoClient.getAccessToken();
-              const idToken = await logtoClient.getIdToken();
-              
-              console.log('Tokens received:', {
-                  accessToken,
-                  idToken
-              });
-              
-              // Try to decode tokens
-              for (const [tokenName, token] of [['Access Token', accessToken], ['ID Token', idToken]]) {
-                  if (token) {
-                      try {
-                          const [, payload] = token.split('.');
-                          if (payload) {
-                              const decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
-                              console.log(`${tokenName} payload:`, decodedPayload);
-                          }
-                      } catch (error) {
-                          console.log(`Error decoding ${tokenName}:`, error);
-                      }
-                  }
-              }
-          } catch (error) {
-              // If session not found, redirect to login
-              if (error instanceof Error && error.message.includes('Sign-in session not found')) {
-                  await logtoClient.signIn(`${process.env.API_URL || 'http://localhost:4000'}/auth/callback`);
-                  throw APIError.unauthenticated("Session expired, please login again");
-              }
-              throw error;
-          }
-          
-          // Get user info after successful sign-in
-          const userInfo = await logtoClient.fetchUserInfo();
-          console.log('User info:', userInfo);
-
-          if (!userInfo.sub) {
-              throw APIError.internal("Failed to get user information");
-          }
-
-          // Get access token
-          const accessToken = await logtoClient.getAccessToken();
-
-          return { 
-              access_token: accessToken,
-              user_id: userInfo.sub
-          };
-      } catch (error) {
-          console.error("Callback error:", error);
-          throw APIError.internal(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  async ({
+    code,
+    state,
+  }: {
+    code?: string;
+    state?: string;
+  }): Promise<{ access_token: string; user_id: string }> => {
+    try {
+      if (!code || !state) {
+        throw APIError.invalidArgument(
+          "Authorization code and state are required"
+        );
       }
+
+      const logtoClient = createLogtoClient();
+
+      // Get the stored code verifier
+      const storedSession = sessionStorage.get(state);
+      if (!storedSession?.codeVerifier) {
+        throw APIError.invalidArgument("Invalid state parameter");
+      }
+
+      // Exchange the authorization code for tokens
+      const tokenResponse = await fetch(`${logtoConfig.endpoint}/oidc/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          client_id: logtoConfig.appId,
+          client_secret: logtoConfig.appSecret ?? "",
+          code: code,
+          redirect_uri: `${
+            process.env.API_URL || "http://localhost:4000"
+          }/auth/callback`,
+          code_verifier: storedSession.codeVerifier,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error(`Token exchange failed: ${tokenResponse.status}`);
+      }
+
+      const tokens = (await tokenResponse.json()) as { access_token: string };
+
+      // Store the access token
+      sessionStorage.set(state, {
+        ...storedSession,
+        accessToken: tokens.access_token,
+      });
+
+      // Get user info
+      const userInfoResponse = await fetch(`${logtoConfig.endpoint}/oidc/me`, {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      });
+
+      if (!userInfoResponse.ok) {
+        throw new Error(
+          `Failed to fetch user info: ${userInfoResponse.status}`
+        );
+      }
+
+      const userInfo = (await userInfoResponse.json()) as { sub: string };
+
+      if (!userInfo.sub) {
+        throw APIError.internal("Failed to get user information");
+      }
+
+      return {
+        access_token: tokens.access_token,
+        user_id: userInfo.sub,
+      };
+    } catch (error) {
+      console.error("Callback error:", error);
+      throw APIError.internal(
+        `Authentication failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
   }
 );
 
 export const getUserInfo = api(
   { method: "GET", path: "/auth/userinfo", expose: true },
   async ({ token }: { token: string }) => {
-      try {
-          const auth = await verifyLogtoAuth(token);
-          return { userId: auth.userId, roles: auth.roles, scopes: auth.scopes };
-      } catch (error) {
-          console.error("Get user info error:", error);
-          throw APIError.unauthenticated("Invalid token");
-      }
+    try {
+      const auth = await verifyLogtoAuth(token);
+      return { userId: auth.userId, roles: auth.roles, scopes: auth.scopes };
+    } catch (error) {
+      console.error("Get user info error:", error);
+      throw APIError.unauthenticated("Invalid token");
+    }
   }
 );
 
 export const logoutUser = api(
   { method: "POST", path: "/user/logout", expose: true },
-  async (): Promise<{ success: boolean }> => {
-    // Reset the current workspace
-    await db.rawExec(`SELECT set_config('app.workspace_id', NULL, false)`);
-    return { success: true };
+  async ({ token }: { token: string }): Promise<{ success: boolean }> => {
+    try {
+      // Verify token first
+      const auth = await verifyLogtoAuth(token);
+
+      // Get Logto client
+      const logtoClient = createLogtoClient();
+
+      // Sign out from Logto
+      await logtoClient.signOut();
+
+      // Clear session storage
+      sessionStorage.clear();
+
+      // Reset the current workspace
+      await db.rawExec(`SELECT set_config('app.workspace_id', NULL, false)`);
+
+      return { success: true };
+    } catch (error) {
+      console.error("Logout error:", error);
+      throw APIError.internal(
+        `Logout failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
   }
 );
 
@@ -291,11 +323,10 @@ export const listTables = api(
     `) {
       rows.push(row.table_name); // Thêm tên bảng vào mảng
     }
-    
+
     return { tables: rows };
   }
 );
-
 
 export const deleteUserTable = api(
   { method: "DELETE", path: "/user/delete-table", expose: true },
@@ -343,7 +374,6 @@ export const checkTable = api(
   }
 );
 
-
 export const listUserTableColumns = api(
   { method: "GET", path: "/user/columns", expose: true },
   async (): Promise<{ columns: string[] }> => {
@@ -375,7 +405,9 @@ export const listUserTableColumns = api(
 // Endpoint kiểm tra quyền admin
 export const adminCheckin = api(
   { method: "POST", path: "/user/checkin", expose: true },
-  async (params: { authorization?: string }): Promise<{ message: string; userId: string }> => {
+  async (params: {
+    authorization?: string;
+  }): Promise<{ message: string; userId: string }> => {
     if (!params.authorization || !params.authorization.startsWith("Bearer ")) {
       throw APIError.unauthenticated("Missing or invalid token");
     }
