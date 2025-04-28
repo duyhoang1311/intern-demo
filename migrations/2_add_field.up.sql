@@ -1,0 +1,10 @@
+CREATE TABLE "user" (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  roles TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  workspace_id UUID NOT NULL,
+  FOREIGN KEY (workspace_id) REFERENCES workspace(id) ON DELETE CASCADE
+);

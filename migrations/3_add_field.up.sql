@@ -1,0 +1,10 @@
+-- -- Thêm user giả với role 'admin'
+-- INSERT INTO "user" (id, name, email, password_hash, workspace_id, roles)
+-- VALUES (
+--   gen_random_uuid(),                    
+--   'Admin User',
+--   'admin@example.com',
+--   '4fa0f123-b216-4a60-bfad-5c5ad9f7fd31', -- giả lập password đã mã hóa bằng bcrypt
+--   gen_random_uuid(),                    -- workspace_id giả
+--   ARRAY['admin']
+-- );

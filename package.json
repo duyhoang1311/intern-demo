@@ -9,12 +9,21 @@
     "test": "vitest"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20.5.7",
+    "@types/node-fetch": "^2.6.12",
+    "@types/pg": "^8.11.14",
     "typescript": "^5.2.2",
     "vitest": "^2.1.4"
   },
   "dependencies": {
-    "encore.dev": "^1.46.20"
+    "@logto/node": "^3.1.4",
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.5.0",
+    "encore.dev": "^1.46.20",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.15.5"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.13.0"
