@@ -2,11 +2,8 @@ import { api, APIError } from "encore.dev/api";
 import { db } from "../db";
 import { randomUUID } from "node:crypto";
 import { verifyLogtoAuth } from "../user/auth";
-<<<<<<< HEAD
-import { snsClient, TOPIC_ARN } from "../config/aws";
+import { TOPIC_ARN, snsClient } from "../config/aws";
 import { PublishCommand } from "@aws-sdk/client-sns";
-=======
->>>>>>> bc7bced (Expanded the database schema (lead, offer, application))
 
 export interface Lead {
   id: string;
@@ -58,7 +55,6 @@ export const createLead = api(
         SELECT * FROM lead WHERE id = ${id}
       `;
 
-<<<<<<< HEAD
       // Publish Lead.New event
       const event = {
         type: "Lead.New",
@@ -87,8 +83,6 @@ export const createLead = api(
 
       await snsClient.send(publishCommand);
 
-=======
->>>>>>> bc7bced (Expanded the database schema (lead, offer, application))
       return {
         id: newLead?.id,
         name: newLead?.name,

@@ -1,13 +1,7 @@
 import { api, APIError } from "encore.dev/api";
-<<<<<<< HEAD
-import { db } from "../db.js";
-import { randomUUID } from "node:crypto";
-import { verifyLogtoAuth } from "../user/auth.js";
-=======
 import { db } from "../db";
 import { randomUUID } from "node:crypto";
 import { verifyLogtoAuth } from "../user/auth";
->>>>>>> bc7bced (Expanded the database schema (lead, offer, application))
 
 export interface Application {
   id: string;
