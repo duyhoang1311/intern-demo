@@ -2,6 +2,8 @@ import { api, APIError } from "encore.dev/api";
 import { db } from "../db";
 import { randomUUID } from "node:crypto";
 import { verifyLogtoAuth } from "../user/auth";
+import { snsClient, TOPIC_ARN } from "../config/aws";
+import { PublishCommand } from "@aws-sdk/client-sns";
 
 export interface Lead {
   id: string;
@@ -52,6 +54,34 @@ export const createLead = api(
       const newLead = await db.queryRow`
         SELECT * FROM lead WHERE id = ${id}
       `;
+
+      // Publish Lead.New event
+      const event = {
+        type: "Lead.New",
+        data: {
+          id: newLead?.id,
+          name: newLead?.name,
+          email: newLead?.email,
+          phone: newLead?.phone,
+          status: newLead?.status,
+          source: newLead?.source,
+          created_at: newLead?.created_at,
+          workspace_id: newLead?.workspace_id,
+        },
+      };
+
+      const publishCommand = new PublishCommand({
+        TopicArn: TOPIC_ARN,
+        Message: JSON.stringify(event),
+        MessageAttributes: {
+          eventType: {
+            DataType: "String",
+            StringValue: "Lead.New",
+          },
+        },
+      });
+
+      await snsClient.send(publishCommand);
 
       return {
         id: newLead?.id,

@@ -11,7 +11,6 @@ interface UserInfo {
   sub: string;
   name?: string | null;
   email?: string;
-  roles?: string[];
   [key: string]: unknown;
 }
 
@@ -58,7 +57,7 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
       throw new Error("Token is not active");
     }
 
-    // Get user info with roles
+    // Get user info
     const userInfoResponse = await fetch(`${baseUrl}/oidc/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -73,10 +72,11 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
       throw new Error("No user ID in response");
     }
 
-    // Get roles from user info
-    const roles = (userInfo.roles as string[]) || [];
     const scopes =
       typeof tokenInfo.scope === "string" ? tokenInfo.scope.split(" ") : [];
+    const roles = Array.isArray(tokenInfo.role)
+      ? tokenInfo.role.map((r) => r.name)
+      : [];
 
     return {
       userId: userInfo.sub,

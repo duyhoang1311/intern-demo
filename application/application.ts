@@ -1,7 +1,7 @@
 import { api, APIError } from "encore.dev/api";
-import { db } from "../db";
+import { db } from "../db.js";
 import { randomUUID } from "node:crypto";
-import { verifyLogtoAuth } from "../user/auth";
+import { verifyLogtoAuth } from "../user/auth.js";
 
 export interface Application {
   id: string;
