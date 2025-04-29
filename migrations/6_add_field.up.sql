@@ -1,0 +1,1 @@
+ALTER TABLE "offer" ALTER COLUMN salary TYPE FLOAT; 

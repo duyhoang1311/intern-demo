@@ -41,19 +41,19 @@ export const createOffer = api(
         throw APIError.invalidArgument("No workspace selected");
       }
 
-      await db.exec`
-        INSERT INTO offer (id, application_id, salary, benefits, workspace_id)
-        VALUES (${id}, ${application_id}::uuid, ${salary}, ${benefits}, ${workspaceId.workspace_id}::uuid)
-      `;
+      // Convert salary to string and use it directly
+      const salaryStr = salary.toString();
 
       const newOffer = await db.queryRow`
-        SELECT * FROM offer WHERE id = ${id}
+        INSERT INTO offer (id, application_id, salary, benefits, workspace_id)
+        VALUES (${id}, ${application_id}::uuid, ${salary}, ${benefits}, ${workspaceId.workspace_id}::uuid)
+        RETURNING *
       `;
 
       return {
         id: newOffer?.id,
         application_id: newOffer?.application_id,
-        salary: newOffer?.salary,
+        salary: parseFloat(newOffer?.salary),
         benefits: newOffer?.benefits,
         status: newOffer?.status,
         created_at: newOffer?.created_at,

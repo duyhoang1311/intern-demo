@@ -21,6 +21,7 @@
   "dependencies": {
     "@aws-sdk/client-sns": "^3.797.0",
     "@aws-sdk/client-sqs": "^3.797.0",
+    "@clickhouse/client": "^1.11.1",
     "@logto/node": "^3.1.4",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.5.0",

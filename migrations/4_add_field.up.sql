@@ -45,7 +45,7 @@ CREATE POLICY "Users can only access applications in their workspace"
   CREATE TABLE "offer" (
   id UUID PRIMARY KEY,
   application_id UUID NOT NULL,
-  salary DECIMAL(10,2) NOT NULL,
+  salary NUMERIC NOT NULL,
   benefits TEXT,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
