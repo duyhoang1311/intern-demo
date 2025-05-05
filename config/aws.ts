@@ -9,15 +9,15 @@ import {
 } from "./secrets";
 
 export const awsConfig = {
-  region: awsRegion,
+  region: awsRegion() || "ap-southeast-2",
   credentials: {
-    accessKeyId: awsAccessKeyId,
-    secretAccessKey: awsSecretAccessKey,
+    accessKeyId: awsAccessKeyId(),
+    secretAccessKey: awsSecretAccessKey(),
   },
 };
 
 export const sqsClient = new SQSClient(awsConfig);
 export const snsClient = new SNSClient(awsConfig);
 
-export const QUEUE_URL = queueUrl;
-export const TOPIC_ARN = topicArn;
+export const QUEUE_URL = queueUrl();
+export const TOPIC_ARN = topicArn();

@@ -1,8 +1,8 @@
-import { secret } from "encore";
+import { secret } from "encore.dev/config";
 
-// Ép kiểu rõ ràng về string
-export const awsAccessKeyId = secret("AWS_ACCESS_KEY_ID") as string;
-export const awsSecretAccessKey = secret("AWS_SECRET_ACCESS_KEY") as string;
-export const awsRegion = secret("AWS_REGION") as string;
-export const queueUrl = secret("SQS_QUEUE_URL") as string;
-export const topicArn = secret("SNS_TOPIC_ARN") as string;
+// Get secrets from Encore
+export const awsAccessKeyId = secret("AWS_ACCESS_KEY_ID");
+export const awsSecretAccessKey = secret("AWS_SECRET_ACCESS_KEY");
+export const awsRegion = secret("AWS_REGION");
+export const queueUrl = secret("SQS_QUEUE_URL");
+export const topicArn = secret("SNS_TOPIC_ARN");
