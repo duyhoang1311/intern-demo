@@ -35,4 +35,4 @@ jobs:
       - name: Deploy to Encore
         env:
           ENCORE_API_KEY: ${{ secrets.ENCORE_API_KEY }}
-        run: encore deploy
+        run: encore run
