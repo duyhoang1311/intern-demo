@@ -15,7 +15,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Download Encore CLI script
         uses: sozo-design/curl@v1.0.2
@@ -32,7 +32,11 @@ jobs:
       - name: Verify Encore CLI Installation
         run: encore version
 
-      - name: Deploy to Encore
+      - name: Login to Encore
+        run: encore auth login --non-interactive
         env:
-          ENCORE_API_KEY: ${{ secrets.ENCORE_API_KEY }}
+          ENCORE_EMAIL: ${{ secrets.ENCORE_EMAIL }}
+          ENCORE_PASSWORD: ${{ secrets.ENCORE_PASSWORD }}
+
+      - name: Deploy to Encore
         run: encore run
