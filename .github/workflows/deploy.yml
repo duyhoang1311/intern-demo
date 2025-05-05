@@ -17,8 +17,13 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Download Encore CLI script
+        uses: sozo-design/curl@v1.0.2
+        with:
+          args: --output install.sh -L https://encore.dev/install.sh
+
       - name: Install Encore CLI
-        run: npm install -g @encoredev/cli
+        run: bash install.sh
 
       - name: Deploy to Encore
         env:
