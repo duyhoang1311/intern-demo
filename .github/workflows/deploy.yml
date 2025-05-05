@@ -33,7 +33,7 @@ jobs:
         run: encore version
 
       - name: Login to Encore
-        run: encore auth login --non-interactive
+        run: encore auth login 
         env:
           ENCORE_EMAIL: ${{ secrets.ENCORE_EMAIL }}
           ENCORE_PASSWORD: ${{ secrets.ENCORE_PASSWORD }}
