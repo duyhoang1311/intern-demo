@@ -277,3 +277,61 @@ export const getQuoteEvents = api(
     }
   }
 );
+
+export const getConversionRate = api(
+  { method: "GET", path: "/stats/conversion-rate", expose: true },
+  async (params: {
+    workspaceId: string;
+    startDate?: string;
+    endDate?: string;
+    authorization?: string;
+  }): Promise<{
+    total_sent: number;
+    total_converted: number;
+    conversion_rate: number;
+  }> => {
+    try {
+      // Xác thực
+      if (!params.authorization || !params.authorization.startsWith("Bearer ")) {
+        throw APIError.unauthenticated("Missing or invalid token");
+      }
+      const token = params.authorization.split(" ")[1];
+      const auth = await verifyLogtoAuth(token);
+      if (!auth.workspaceId) throw APIError.permissionDenied("No workspace access");
+      if (params.workspaceId !== auth.workspaceId) throw APIError.permissionDenied("Workspace mismatch");
+
+      // Query ClickHouse
+      const clickhouseService = ClickHouseService.getInstance();
+      const whereDate = params.startDate && params.endDate
+        ? `AND created_at >= '${params.startDate}' AND created_at <= '${params.endDate}'`
+        : "";
+      const result = await clickhouseService.query(`
+        WITH quote_events AS (
+          SELECT
+            quote_id,
+            argMax(event_type, created_at) as last_status
+          FROM quote_analytics
+          WHERE workspace_id = '${params.workspaceId}'
+          ${whereDate}
+          GROUP BY quote_id
+        )
+        SELECT
+          countIf(last_status = 'sent') as total_sent,
+          countIf(last_status = 'converted') as total_converted,
+          round(
+            if(countIf(last_status = 'sent') = 0, 0,
+              countIf(last_status = 'converted') / countIf(last_status = 'sent') * 100
+            ), 2
+          ) as conversion_rate
+        FROM quote_events
+      `);
+
+      return result[0];
+    } catch (error) {
+      console.error("Get conversion rate error:", error);
+      throw APIError.internal(
+        `Failed to get conversion rate: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+);

@@ -81,15 +81,16 @@ export const createQuote = api(
       try {
         // Track quote creation event
         const clickhouseService = ClickHouseService.getInstance();
+        const createdAt = new Date()
+          .toISOString()
+          .slice(0, 19)
+          .replace("T", " ");
         const event = {
           id: randomUUID(),
           quote_id,
           event_type: "created",
-          event_data: JSON.stringify({
-            amount: quote.price,
-            currency: "USD",
-          }),
-          created_at: new Date(),
+          event_data: { amount: quote.price, currency: "USD" },
+          created_at: createdAt,
           user_id: auth.userId,
           workspace_id: auth.workspaceId,
         };
@@ -167,15 +168,16 @@ export const updateQuoteStatus = api(
       // Track status update event
       try {
         const clickhouseService = ClickHouseService.getInstance();
+        const createdAt = new Date()
+          .toISOString()
+          .slice(0, 19)
+          .replace("T", " ");
         await clickhouseService.insertQuoteEvent({
           id: randomUUID(),
           quote_id: params.id,
           event_type: params.status,
-          event_data: JSON.stringify({
-            amount: quote.price,
-            currency: "USD",
-          }),
-          created_at: new Date(),
+          event_data: { amount: quote.price, currency: "USD" },
+          created_at: createdAt,
           user_id: auth.userId,
           workspace_id: auth.workspaceId,
         });
@@ -322,6 +324,81 @@ export const deleteQuote = api(
       console.error("Delete quote error:", error);
       throw APIError.internal(
         `Failed to delete quote: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  }
+);
+
+export const sendQuote = api(
+  { method: "POST", path: "/quote/send", expose: true },
+  async (params: {
+    id: string;
+    authorization?: string;
+  }): Promise<{ success: boolean }> => {
+    try {
+      // Xác thực
+      if (
+        !params.authorization ||
+        !params.authorization.startsWith("Bearer ")
+      ) {
+        throw APIError.unauthenticated("Missing or invalid token");
+      }
+      const token = params.authorization.split(" ")[1];
+      const auth = await verifyLogtoAuth(token);
+
+      // Lấy quote
+      const quoteService = new QuoteService();
+      const quote = await quoteService.getQuoteById(params.id);
+      if (!quote) throw APIError.notFound("Quote not found");
+      if (quote.workspace_id !== auth.workspaceId)
+        throw APIError.permissionDenied("Workspace mismatch");
+
+      // Cập nhật trạng thái quote
+      await db.exec`
+        UPDATE quotes
+        SET status = 'sent', sent_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${params.id}::uuid
+      `;
+
+      // Emit event "sent" vào ClickHouse
+      try {
+        const clickhouseService = ClickHouseService.getInstance();
+        const createdAt = new Date()
+          .toISOString()
+          .slice(0, 19)
+          .replace("T", " ");
+        await clickhouseService.insertQuoteEvent({
+          id: randomUUID(),
+          quote_id: params.id,
+          event_type: "sent",
+          event_data: { amount: quote.price, currency: "USD" },
+          created_at: createdAt,
+          user_id: auth.userId,
+          workspace_id: auth.workspaceId,
+        });
+      } catch (err) {
+        console.error("Error tracking quote sent event:", err);
+      }
+
+      // Ghi vào audit_log (giả sử bạn có hàm insertAuditLog)
+      try {
+        await db.exec`
+          INSERT INTO audit_log (id, user_id, action, target_id, workspace_id, created_at)
+          VALUES (${randomUUID()}, ${auth.userId}, 'quote_sent', ${
+          params.id
+        }, ${auth.workspaceId}, CURRENT_TIMESTAMP)
+        `;
+      } catch (err) {
+        console.error("Error writing audit log:", err);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Send quote error:", error);
+      throw APIError.internal(
+        `Failed to send quote: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
