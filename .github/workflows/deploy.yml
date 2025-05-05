@@ -27,7 +27,7 @@ jobs:
 
       - name: Verify Encore CLI Installation
         run: |
-          encore --version
+          encore version
           echo $PATH
 
       - name: Deploy to Encore
