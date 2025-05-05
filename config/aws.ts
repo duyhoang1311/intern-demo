@@ -1,32 +1,42 @@
-import { secret } from "encore.dev/config";
 import { SQSClient } from "@aws-sdk/client-sqs";
 import { SNSClient } from "@aws-sdk/client-sns";
+import { secret } from "encore";
 
-// Encore secrets
-export const awsAccessKey = secret("AWS_ACCESS_KEY_ID");
-export const awsSecretKey = secret("AWS_SECRET_ACCESS_KEY");
-export const awsRegion = secret("AWS_REGION");
-export const queueUrl = secret("SQS_QUEUE_URL");
-export const topicArn = secret("SNS_TOPIC_ARN");
+export function createAwsClients() {
+  const region = secret("AWS_REGION") ?? "ap-southeast-2";
+  const accessKeyId = secret("AWS_ACCESS_KEY_ID");
+  const secretAccessKey = secret("AWS_SECRET_ACCESS_KEY");
 
-// Config AWS SDK
-export const awsConfig = {
-  region: awsRegion() || "ap-southeast-2",
-  credentials: {
-    accessKeyId: awsAccessKey(),
-    secretAccessKey: awsSecretKey(),
-  },
-};
+  if (!accessKeyId || !secretAccessKey) {
+    throw new Error("Missing required AWS credentials");
+  }
 
-// Clients
-export const sqsClient = new SQSClient(awsConfig);
-export const snsClient = new SNSClient(awsConfig);
+  const awsConfig = {
+    region,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+  };
 
-// Logging (safe)
-console.log("AWS Config:", {
-  region: awsConfig.region,
-  accessKeyId: awsConfig.credentials.accessKeyId,
-  secretKeyLength: awsConfig.credentials.secretAccessKey.length,
-});
-console.log("Queue URL:", queueUrl());
-console.log("Topic ARN:", topicArn());
+  const sqsClient = new SQSClient(awsConfig);
+  const snsClient = new SNSClient(awsConfig);
+
+  return { sqsClient, snsClient };
+}
+
+export function getQueueUrl(): string {
+  const url = secret("SQS_QUEUE_URL");
+  if (!url) {
+    throw new Error("Missing secret: SQS_QUEUE_URL");
+  }
+  return url;
+}
+
+export function getTopicArn(): string {
+  const arn = secret("SNS_TOPIC_ARN");
+  if (!arn) {
+    throw new Error("Missing secret: SNS_TOPIC_ARN");
+  }
+  return arn;
+}
