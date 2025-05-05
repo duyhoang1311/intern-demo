@@ -6,12 +6,12 @@ export const logtoConfig = {
   appId: process.env.LOGTO_APP_ID || "36ljq4yaob83uz2j7cmb4",
   appSecret: process.env.LOGTO_APP_SECRET || "pJN43JmnPQytQLc6NU9zEorSPZqyHZKl",
   scopes: ["openid", "profile", "email", "offline_access"],
-  resources: [process.env.BASE_URL || "https://demo-1-p9ai.encore.app"],
+  resources: [process.env.BASE_URL || "https://staging-demo-1-p9ai.encr.app"],
   postLogoutRedirectUri: `${
-    process.env.BASE_URL || "https://demo-1-p9ai.encore.app"
+    process.env.BASE_URL || "https://staging-demo-1-p9ai.encr.app"
   }/auth/callback`,
   callbackUri: `${
-    process.env.BASE_URL || "https://demo-1-p9ai.encore.app"
+    process.env.BASE_URL || "https://staging-demo-1-p9ai.encr.app"
   }/auth/callback`,
 };
 
