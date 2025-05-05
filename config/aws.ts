@@ -1,43 +1,32 @@
-import { config } from "dotenv";
+import { secret } from "encore.dev/config";
 import { SQSClient } from "@aws-sdk/client-sqs";
 import { SNSClient } from "@aws-sdk/client-sns";
 
-// Load environment variables from .env file
-config();
+// Encore secrets
+export const awsAccessKey = secret("AWS_ACCESS_KEY_ID");
+export const awsSecretKey = secret("AWS_SECRET_ACCESS_KEY");
+export const awsRegion = secret("AWS_REGION");
+export const queueUrl = secret("SQS_QUEUE_URL");
+export const topicArn = secret("SNS_TOPIC_ARN");
 
-if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-  throw new Error(
-    "AWS credentials are required. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables."
-  );
-}
-
+// Config AWS SDK
 export const awsConfig = {
-  region: process.env.AWS_REGION || "ap-southeast-2",
+  region: awsRegion() || "ap-southeast-2",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    accessKeyId: awsAccessKey(),
+    secretAccessKey: awsSecretKey(),
   },
 };
 
-// Log AWS config (without exposing sensitive data)
+// Clients
+export const sqsClient = new SQSClient(awsConfig);
+export const snsClient = new SNSClient(awsConfig);
+
+// Logging (safe)
 console.log("AWS Config:", {
   region: awsConfig.region,
   accessKeyId: awsConfig.credentials.accessKeyId,
   secretKeyLength: awsConfig.credentials.secretAccessKey.length,
 });
-
-export const sqsClient = new SQSClient(awsConfig);
-export const snsClient = new SNSClient(awsConfig);
-
-export const QUEUE_URL = process.env.SQS_QUEUE_URL;
-export const TOPIC_ARN = process.env.SNS_TOPIC_ARN;
-
-if (!QUEUE_URL || !TOPIC_ARN) {
-  throw new Error(
-    "SQS_QUEUE_URL and SNS_TOPIC_ARN environment variables are required."
-  );
-}
-
-// Log queue and topic info
-console.log("Queue URL:", QUEUE_URL);
-console.log("Topic ARN:", TOPIC_ARN);
+console.log("Queue URL:", queueUrl());
+console.log("Topic ARN:", topicArn());
