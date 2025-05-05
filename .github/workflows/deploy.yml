@@ -25,10 +25,12 @@ jobs:
       - name: Install Encore CLI
         run: bash install.sh
 
-      - name: Verify Encore CLI Installation
+      - name: Add Encore CLI to PATH
         run: |
-          encore version
-          echo $PATH
+          echo "$HOME/.encore/bin" >> $GITHUB_PATH
+
+      - name: Verify Encore CLI Installation
+        run: encore version
 
       - name: Deploy to Encore
         env:
