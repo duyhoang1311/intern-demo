@@ -18,7 +18,7 @@ jobs:
           node-version: '20'
 
       - name: Install Encore CLI
-        run: npm install -g encoredev
+        run: npm install -g @encoredev/cli
 
       - name: Deploy to Encore
         env:
