@@ -3,7 +3,7 @@ name: Deploy to Encore Cloud
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
@@ -12,15 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '20'
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install Encore CLI
+        run: npm install -g encoredev
 
       - name: Deploy to Encore
-        run: npx encore deploy
         env:
           ENCORE_API_KEY: ${{ secrets.ENCORE_API_KEY }}
+        run: encore deploy
