@@ -33,10 +33,8 @@ jobs:
         run: encore version
 
       - name: Login to Encore
-        run: encore auth login 
-        env:
-          ENCORE_EMAIL: ${{ secrets.ENCORE_EMAIL }}
-          ENCORE_PASSWORD: ${{ secrets.ENCORE_PASSWORD }}
+        run: |
+          echo -e "\n" | encore auth login
 
       - name: Deploy to Encore
-        run: encore run
+        run: encore deploy
