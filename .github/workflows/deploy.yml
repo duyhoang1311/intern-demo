@@ -37,4 +37,4 @@ jobs:
           echo -e "\n" | encore auth login
 
       - name: Deploy to Encore
-        run: encore run
+        run: encore deploy
