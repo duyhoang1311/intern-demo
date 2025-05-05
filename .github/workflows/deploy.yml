@@ -25,6 +25,11 @@ jobs:
       - name: Install Encore CLI
         run: bash install.sh
 
+      - name: Verify Encore CLI Installation
+        run: |
+          encore --version
+          echo $PATH
+
       - name: Deploy to Encore
         env:
           ENCORE_API_KEY: ${{ secrets.ENCORE_API_KEY }}
