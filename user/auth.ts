@@ -54,12 +54,12 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
       throw new Error("No user ID in response");
     }
 
-    // Lấy workspace_id từ session storage
+    // Lấy workspace_id từ session storage hoặc từ userInfo
     const session = sessionStorage.get(token);
-    const workspaceId = session?.workspaceId;
+    const workspaceId = session?.workspaceId || userInfo.workspace_id || "";
 
     if (!workspaceId) {
-      throw new Error("No workspace ID found in session");
+      throw new Error("No workspace ID found in session or user info");
     }
 
     return {
