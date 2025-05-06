@@ -25,12 +25,9 @@ export const createInsight = api(
     try {
       const auth = await verifyLogtoAuth(token);
 
-      const workspaceId = await db.queryRow`
-        SELECT current_setting('app.workspace_id', true) as workspace_id
-      `;
-
-      if (!workspaceId?.workspace_id) {
-        throw APIError.invalidArgument("No workspace selected");
+      const workspaceId = auth.workspaceId;
+      if (!workspaceId) {
+        throw new Error("No workspace ID found in auth context");
       }
 
       const id = randomUUID();
@@ -41,7 +38,7 @@ export const createInsight = api(
           ${id}::uuid,
           ${content},
           ${auth.userId},
-          ${workspaceId.workspace_id}::uuid
+          ${workspaceId}::uuid
         )
       `;
 
@@ -50,7 +47,7 @@ export const createInsight = api(
         user_id: auth.userId,
         action: "create_insight",
         target_id: id,
-        workspace_id: workspaceId.workspace_id,
+        workspace_id: workspaceId,
       });
 
       const newInsight = await db.queryRow`
@@ -64,7 +61,6 @@ export const createInsight = api(
         created_at: newInsight?.created_at,
         workspace_id: newInsight?.workspace_id,
       };
-      
     } catch (error) {
       console.error("Create insight error:", error);
       throw APIError.internal(
