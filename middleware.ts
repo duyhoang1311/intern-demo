@@ -1,5 +1,7 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { db } from "./db";
+import { APIError } from "encore.dev/api";
+import { verifyLogtoAuth } from "./user/auth";
 
 const SECRET_KEY = process.env.SECRET_KEY || "your-secret-key";
 
@@ -44,6 +46,10 @@ export class JWTSimulator {
 
   // Hàm kiểm tra nếu người dùng có quyền admin
   static isAdmin(user: { role: string }): boolean {
-    return user.role === 'admin';
+    return user.role === "admin";
   }
 }
+
+
+
+

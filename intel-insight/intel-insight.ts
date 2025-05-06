@@ -24,7 +24,8 @@ export const createInsight = api(
   }): Promise<IntelInsight> => {
     try {
       const auth = await verifyLogtoAuth(token);
-
+      console.log("auth", auth);
+      
       const workspaceId = auth.workspaceId;
       if (!workspaceId) {
         throw new Error("No workspace ID found in auth context");

@@ -42,10 +42,7 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
     });
 
     if (!userInfoResponse.ok) {
-      const errorText = await userInfoResponse.text();
-      throw new Error(
-        `Failed to fetch user info: ${userInfoResponse.status} - ${errorText}`
-      );
+      throw new Error(`Failed to fetch user info: ${userInfoResponse.status}`);
     }
 
     const userInfo = (await userInfoResponse.json()) as UserInfo;
@@ -54,12 +51,12 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
       throw new Error("No user ID in response");
     }
 
-    // Lấy workspace_id từ session storage hoặc từ userInfo
+    // Lấy workspace_id từ session storage
     const session = sessionStorage.get(token);
-    const workspaceId = session?.workspaceId || userInfo.workspace_id || "";
+    const workspaceId = session?.workspaceId;
 
     if (!workspaceId) {
-      throw new Error("No workspace ID found in session or user info");
+      throw new Error("No workspace ID found in session");
     }
 
     return {
@@ -334,3 +331,4 @@ export const getAuthUserInfo = api(
     }
   }
 );
+
