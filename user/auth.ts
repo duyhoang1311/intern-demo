@@ -42,7 +42,10 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
     });
 
     if (!userInfoResponse.ok) {
-      throw new Error(`Failed to fetch user info: ${userInfoResponse.status}`);
+      const errorText = await userInfoResponse.text();
+      throw new Error(
+        `Failed to fetch user info: ${userInfoResponse.status} - ${errorText}`
+      );
     }
 
     const userInfo = (await userInfoResponse.json()) as UserInfo;
@@ -331,4 +334,3 @@ export const getAuthUserInfo = api(
     }
   }
 );
-
