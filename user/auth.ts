@@ -36,7 +36,7 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
     const logtoClient = createLogtoClient();
     const baseUrl = logtoConfig.endpoint.replace(/\/$/, "");
 
-    // 1. Get user info
+    // Get user info
     const userInfoResponse = await fetch(`${baseUrl}/oidc/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -51,28 +51,7 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
       throw new Error("No user ID in response");
     }
 
-    // 2. Get token info to extract scopes
-    const introspectResponse = await fetch(`${baseUrl}/oidc/token/introspect`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        token,
-        client_id: logtoConfig.appId,
-        client_secret: logtoConfig.appSecret,
-      }),
-    });
-
-    if (!introspectResponse.ok) {
-      throw new Error(`Failed to introspect token: ${introspectResponse.status}`);
-    }
-
-    const tokenInfo = (await introspectResponse.json()) as TokenInfo;
-
-    const scopes = tokenInfo.scope?.split(" ") || [];
-
-    // 3. Lấy workspace_id từ session
+    // Lấy workspace_id từ session storage
     const session = sessionStorage.get(token);
     const workspaceId = session?.workspaceId;
 
@@ -85,7 +64,7 @@ export async function verifyLogtoAuth(token: string): Promise<AuthContext> {
       email: userInfo.email || "",
       workspaceId,
       roles: userInfo.roles || [],
-      scopes,
+      scopes: [],
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
