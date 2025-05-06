@@ -53,7 +53,7 @@ export const createAuditLog = api(
     workspace_id: string;
   }) => {
     await db.exec`
-      INSERT INTO audit_log (id, user_id, action, target_id, workspace_id, metadata, created_at)
+      INSERT INTO audit_log (id, user_id, action, target_id, workspace_id, created_at)
       VALUES (
         ${randomUUID()},
         ${params.user_id},
