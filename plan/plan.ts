@@ -18,10 +18,10 @@ export const createPlan = api(
   { method: "POST", path: "/plan", expose: true },
   async ({ planName, token }: { planName: string, token: string }): Promise<Plan> => {
     const auth = await verifyLogtoAuth(token);
-    if (!isAdmin(auth)) {
-      throw APIError.permissionDenied("Only admins can create plans");
-    }
-    console.log('User is admin:', true);
+    // if (!isAdmin(auth)) {
+    //   throw APIError.permissionDenied("Only admins can create plans");
+    // }
+    // console.log('User is admin:', true);
 
     const id = randomUUID();
     const currentWorkspaceId = await db.queryRow`
